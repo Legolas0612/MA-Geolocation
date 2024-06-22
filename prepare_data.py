@@ -7,7 +7,7 @@ rgb_values = []
 i = 0
 for id in image_id:
     rgb_values = get_rgb_values(str(id))
-    with open('rgb_values2.txt', 'w') as f:
+    with open('rgb_values3.txt', 'a') as f:
     # Write each value on a new line
         for value in rgb_values:
             value = str(value).replace('][', ';').replace(']', '').replace('[', '').replace(" ", "")
@@ -15,6 +15,6 @@ for id in image_id:
         f.write('\n')
     i += 1
     print(i)
-    with open('counter2.txt', 'w') as f:
+    with open('counter3.txt', 'a') as f:
         f.write(str(i))
         f.write('\n')

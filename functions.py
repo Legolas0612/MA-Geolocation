@@ -4,7 +4,7 @@ def get_rgb_values(id):
     try:
         img = Image.open(f"C:\\Users\\Fabian Schmid\\.vscode\\Programme\\Maturarbeit\\Datasets\\geolocation\\images\\{id}.jpeg")
     except:
-        with open('error2.txt', 'a') as f:
+        with open('error3.txt', 'a') as f:
             f.write(id)
         return []
     #img = Image.open(f"C:\\Users\\Fabian Schmid\\.vscode\\Programme\\Maturarbeit\\Datasets\\geolocation\\images\\{id}.jpeg")
