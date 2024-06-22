@@ -1,6 +1,9 @@
 from functions import get_rgb_values, get_imageId_latitude_longitude_values
 
 image_id, latitude, longitude = get_imageId_latitude_longitude_values()
+with open('coordinates.txt', 'a') as f:
+    for i in range(len(latitude)):
+        f.write(str(latitude[i]) + ',' + str(longitude[i]) + '\n')
 
 # Get the RGB values for each image
 rgb_values = []
