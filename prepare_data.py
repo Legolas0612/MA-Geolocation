@@ -4,20 +4,24 @@ image_id, latitude, longitude = get_imageId_latitude_longitude_values()
 with open('coordinates.txt', 'a') as f:
     for i in range(len(latitude)):
         f.write(str(latitude[i]) + ',' + str(longitude[i]) + '\n')
+        continue
 
 # Get the RGB values for each image
 rgb_values = []
 i = 0
 for id in image_id:
     rgb_values = get_rgb_values(str(id))
-    with open('rgb_values3.txt', 'a') as f:
-    # Write each value on a new line
-        for value in rgb_values:
-            value = str(value).replace('][', ';').replace(']', '').replace('[', '').replace(" ", "")
-            f.write(str(value))
+    #print(rgb_values)
+    with open('rgb_values4.txt', 'a') as f:
+        # Write each value on a new line
+        print(rgb_values)
+        rgb_values = str(rgb_values).replace(']', '').replace('[', '').replace(" ", "")
+        print(rgb_values)
+        f.write(str(rgb_values))
         f.write('\n')
     i += 1
     print(i)
     with open('counter3.txt', 'a') as f:
         f.write(str(i))
         f.write('\n')
+        continue
