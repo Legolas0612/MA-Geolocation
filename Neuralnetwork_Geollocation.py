@@ -69,9 +69,9 @@ X_train = torch.from_numpy(X_train.astype(np.float32))
 X_test = torch.from_numpy(X_test.astype(np.float32))
 
 # Define hyperparameters
-input_size = X_train.shape[1]  # number of features in the input
+input_size = X_train.shape[1]
 hidden_size = 64
-output_size = 2  # number of outputs (latitude and longitude)
+output_size = 2 
 
 # Instantiate the model
 model = NeuralNetwork(input_size, hidden_size, output_size)
@@ -87,7 +87,7 @@ for epoch in range(epochs):
     outputs = model(X_train)
     
     # Compute loss
-    loss = criterion(outputs, y_train.float())  # Ensure y_train is float type
+    loss = criterion(outputs, y_train.float())
     
     # Backward pass and optimization
     optimizer.zero_grad()

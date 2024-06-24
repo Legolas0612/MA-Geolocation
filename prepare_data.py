@@ -14,9 +14,7 @@ for id in image_id:
     #print(rgb_values)
     with open('rgb_values4.txt', 'a') as f:
         # Write each value on a new line
-        print(rgb_values)
         rgb_values = str(rgb_values).replace(']', '').replace('[', '').replace(" ", "")
-        print(rgb_values)
         f.write(str(rgb_values))
         f.write('\n')
     i += 1

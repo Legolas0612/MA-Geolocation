@@ -4,65 +4,72 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 import numpy as np
 
-# Assuming the model definition remains the same
 
-class CustomDataset(Dataset):
-    def __init__(self, pixel_file, coord_file):
-        # Load pixel values
-        with open(pixel_file, 'r') as f:
-            self.X = np.array([list(map(float, line.strip().split())) for line in f.readlines()], dtype=np.float32)
-        
-        # Load coordinates
-        with open(coord_file, 'r') as f:
-            self.y = np.array([list(map(float, line.strip().split())) for line in f.readlines()], dtype=np.float32)
-        
-        # Normalize pixel values to [0, 1]
-        self.X /= 255.0
+class Neuralnetwork(nn.Module):
+    def __init__(self, input_size, hidden_size1, output_size, hidden_size2):
+        super(model, self).__init__()
+        self.layer1 = nn.Linear(input_size, hidden_size1)
+        self.activation = nn.ReLU()
+        self.layer2 = nn.Linear(hidden_size1, hidden_size2)
+        self.layer3 = nn.Linear(hidden_size2, output_size)
 
-        # Convert arrays to tensors
-        self.X = torch.tensor(self.X)
-        self.y = torch.tensor(self.y)
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.activation(x)
+        x = self.layer2(x)
+        x = self.activation(x)
+        x = self.layer3(x)
+        return x
 
+class ImageDataset(Dataset):
+    def __init__ (self, file_paths):
+        self.file_paths = file_paths
+        self.data_indices = self._prepare_data_indices()
+
+    def _prepare_data_indices(self):
+        data_indices = []
+        for file_path in self.file_paths:
+            with open(file_path, 'r') as f:
+                offset = 0
+                for line in f:
+                    length = len(line)
+                    data_indices.append((file_path, offset, length, line))
+                    offset += len(line)
+        return data_indices
+    
     def __len__(self):
-        return len(self.X)
-
+        return len(self.data_indices)
+    
     def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
+        file_path, offset, length, = self.data_indices[idx]
+        with open(file_path, 'r') as f:
+            f.seek(offset)
+            data = f.read(length)
+            data = data.strip().split(',')
+            inputs = torch.tensor([int(x) for x in data])
+            with open('coordinates.txt', 'r') as file:
+                for i, line in enumerate(file, start=1):
+                    if i == idx + 1:
+                        outputs = line.strip().split(',')
+                        outputs = torch.tensor([float(x) for x in outputs])
+            return inputs, outputs
 
-# Paths to your data files
-pixel_file = 'rgb_values.txt'
-coord_file = 'path/to/coordinates.txt'
-
-# Initialize dataset
-train_dataset = CustomDataset(pixel_file, coord_file)
-# Assuming you have a way to split your dataset into train and test
-# For simplicity, using the same dataset for both train and test here
-test_dataset = CustomDataset(pixel_file, coord_file)
-
-train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
-
-# Initialize the model, criterion, and optimizer as before
-# Assuming input_size, hidden_size1, hidden_size2, and output_size are defined
-model = NeuralNetwork(input_size, hidden_size1, output_size, hidden_size2)
-criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.01)
-
-# Training loop
-epochs = 15
-for epoch in range(epochs):
-    for inputs, targets in train_loader:
-        # Forward pass
-        outputs = model(inputs)
         
-        # Compute loss
-        loss = criterion(outputs, targets.float())  # Ensure targets are float type
-        
-        # Backward pass and optimization
+file_paths = ['rgb_values.txt']
+
+dataset = ImageDataset(file_paths)
+dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+
+model = Neuralnetwork(input_size=784, hidden_size1=128, hidden_size2=64, output_size=2)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+num_epochs = 10
+
+for epoch in range(num_epochs):
+    for inputs, targets in dataloader:
         optimizer.zero_grad()
+        outputs = model(inputs.float())
+        loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
-    
-    print(f'Epoch {epoch+1}/{epochs}')
-
-# Save and evaluate the model as before
