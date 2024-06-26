@@ -1,23 +1,16 @@
-import pandas as pd
-import numpy as np
+import csv
 
-def txt_to_csv(filename, csv_filename):
-    inputs = []
-    i = 0
-    print("test2")
-    with open(filename, 'r') as f:
-        for line in f:
-            a = np.array(line.strip().split(','), dtype=np.uint8)
-            if len(line) != 319488:
-                a = a[:319488]
-            inputs.append(a)
+def convert_to_csv(input_file, output_file):
+    with open(input_file, 'r') as infile, open(output_file, 'w', newline='') as outfile:
+        writer = csv.writer(outfile)
+        i = 0
+        for line in infile:
             print(i)
             i += 1
-    inputs = np.array(inputs)
-    df = pd.DataFrame(inputs)
-    df.to_csv(csv_filename, index=False)
+            values = line.strip().strip('[]').split(',')
+            writer.writerow([float(value) for value in values])
 
-txt_to_csv('train.txt', 'train.csv')
-txt_to_csv('test.txt', 'test.csv')
-txt_to_csv('train_coordinates.txt', 'train_coordinates.csv')
-txt_to_csv('test_coordinates.txt', 'test_coordinates.csv')
+
+convert_to_csv('test_coordinates.txt', 'test_coordinates.csv')
+convert_to_csv('train_coordinates.txt', 'train_coordinates.csv')
+
