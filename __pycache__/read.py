@@ -7,6 +7,12 @@ def read_specific_line(file_path, line_number=11059):
     
 
 # Example usage
-file_path = 'rgb_values4.txt'
-specific_line = read_specific_line(file_path)
-print(specific_line)
+#file_path = 'rgb_values4.txt'
+#specific_line = read_specific_line(file_path)
+#print(specific_line)
+tmp = 0
+with open('rgb_values4.txt', 'r') as f:
+    for i, line in enumerate(f):
+        a = line.strip().split(',')
+        print(i, len(a))
+        tmp = len(a)            
