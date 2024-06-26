@@ -7,7 +7,7 @@ import numpy as np
 
 class Neuralnetwork(nn.Module):
     def __init__(self, input_size, hidden_size1, output_size, hidden_size2):
-        super(model, self).__init__()
+        super(Neuralnetwork, self).__init__()
         self.layer1 = nn.Linear(input_size, hidden_size1)
         self.activation = nn.ReLU()
         self.layer2 = nn.Linear(hidden_size1, hidden_size2)
@@ -21,55 +21,33 @@ class Neuralnetwork(nn.Module):
         x = self.layer3(x)
         return x
 
-class ImageDataset(Dataset):
-    def __init__ (self, file_paths):
-        self.file_paths = file_paths
-        self.data_indices = self._prepare_data_indices()
+input_size = 393216
 
-    def _prepare_data_indices(self):
-        data_indices = []
-        for file_path in self.file_paths:
-            with open(file_path, 'r') as f:
-                offset = 0
-                for line in f:
-                    length = len(line)
-                    data_indices.append((file_path, offset, length, line))
-                    offset += len(line)
-        return data_indices
-    
-    def __len__(self):
-        return len(self.data_indices)
-    
-    def __getitem__(self, idx):
-        file_path, offset, length, = self.data_indices[idx]
-        with open(file_path, 'r') as f:
-            f.seek(offset)
-            data = f.read(length)
-            data = data.strip().split(',')
-            inputs = torch.tensor([int(x) for x in data])
-            with open('coordinates.txt', 'r') as file:
-                for i, line in enumerate(file, start=1):
-                    if i == idx + 1:
-                        outputs = line.strip().split(',')
-                        outputs = torch.tensor([float(x) for x in outputs])
-            return inputs, outputs
-
-        
-file_paths = ['rgb_values.txt']
-
-dataset = ImageDataset(file_paths)
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-
-model = Neuralnetwork(input_size=784, hidden_size1=128, hidden_size2=64, output_size=2)
+model = Neuralnetwork(input_size, hidden_size1=128, hidden_size2=64, output_size=2)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-num_epochs = 10
+num_epochs = 2
 
 for epoch in range(num_epochs):
-    for inputs, targets in dataloader:
-        optimizer.zero_grad()
-        outputs = model(inputs.float())
-        loss = criterion(outputs, targets)
-        loss.backward()
-        optimizer.step()
+    with open('train.txt', 'r') as file1, open('train_coordinates.txt', 'r') as file2:
+        for i in range(1, 100000):
+            print(i)
+            for j, line in enumerate(file1, start=i):
+                if j == i + 1:
+                    inputs = line.strip().split(',')
+                    inputs = torch.tensor([int(x) for x in inputs])
+                    break
+            for j, line in enumerate(file2, start=i):
+                if j == i + 1:
+                    targets = line.strip().split(',')
+                    targets = torch.tensor([float(x) for x in targets])
+                    break
+            optimizer.zero_grad()
+            outputs = model(inputs.float())
+            loss = criterion(outputs, targets)
+            loss.backward()
+            optimizer.step()
+    print(f'Epoch {epoch+1}/{num_epochs}, Loss: {loss.item()}')
+
+torch.save(model.state_dict(), 'geolocation.pth')
