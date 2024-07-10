@@ -21,33 +21,48 @@ class Neuralnetwork(nn.Module):
         x = self.layer3(x)
         return x
 
-input_size = 393216
+input_size = 319488
 
 model = Neuralnetwork(input_size, hidden_size1=128, hidden_size2=64, output_size=2)
-criterion = nn.CrossEntropyLoss()
+criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-num_epochs = 5
+num_epochs = 1
+
+targets = []
+for line in open('train_coordinates.csv', 'r'):
+    targets.append(line.strip().split(','))
+targets = [[float(target[0]), float(target[1])] for target in targets]
+
+print(len(targets))
 
 for epoch in range(num_epochs):
-    with open('train.txt', 'r') as file1, open('train_coordinates.txt', 'r') as file2:
-        for i in range(1, 100000):
-            print(i)
-            for j, line in enumerate(file1, start=i):
-                if j == i + 1:
-                    inputs = line.strip().split(',')
-                    inputs = torch.tensor([int(x) for x in inputs])
-                    break
-            for j, line in enumerate(file2, start=i):
-                if j == i + 1:
-                    targets = line.strip().split(',')
-                    targets = torch.tensor([float(x) for x in targets])
-                    break
+    with open('train.csv', 'r') as file1:
+        for j, line in enumerate(file1, start=0):
+            inputs = []
+            line = line.strip().strip('[]')
+            values = line.split(',')
+            for value in values:
+                grayscale_value = float(value.strip().strip("'"))
+                inputs.append(float(grayscale_value))
+            if len(inputs) >= 319488:
+                inputs = inputs[:319488]
+            elif len(inputs) < 319488:
+                while len(inputs) < 319488:
+                    inputs.append(0)
+            inputs = np.array(inputs, dtype=np.float32) 
+            inputs = torch.from_numpy(inputs)
+            target = np.array(targets[j], dtype=np.float32) 
+            target = torch.from_numpy(target)
             optimizer.zero_grad()
-            outputs = model(inputs.float())
-            loss = criterion(outputs, targets)
+            outputs = model(inputs)
+            loss = criterion(outputs, target)
             loss.backward()
             optimizer.step()
+            if j % 100 == 0:
+                print(j)
+            if j == len(targets) - 1:
+                break
     print(f'Epoch {epoch+1}/{num_epochs}, Loss: {loss.item()}')
 
-torch.save(model.state_dict(), 'geolocation5.pth')
+torch.save(model.state_dict(), '100000_1_128_64.pth')
