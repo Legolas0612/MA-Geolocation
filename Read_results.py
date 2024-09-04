@@ -22,4 +22,4 @@ print(f"Average Distance: {mean_distance:.2f} meters")
 print(f"Distance to be in the Top 25%: {top_25_threshold:.2f} meters")
 print(f"Distance to be in the Top 10%: {top_10_threshold:.2f} meters")
 
-df_sorted.to_csv('results_sorted.csv', index=False)
+# df_sorted.to_csv('results_sorted.csv', index=False)
