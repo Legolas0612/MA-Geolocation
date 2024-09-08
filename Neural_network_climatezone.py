@@ -32,6 +32,7 @@ class SimpleCNN(nn.Module):
         self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
 
         flattened_size = 64 * (image_size[0] // 8) * (image_size[1] // 8)
         
@@ -49,15 +50,16 @@ class SimpleCNN(nn.Module):
         x = self.pool(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
+        x = self.sigmoid(x)
         return x
 
 def main():
     print("libraries imported")
     image_folder = 'Datasets/geolocation/images'
-    csv_file = 'distance_to_point_No_inf.csv'
-    learning_rate = 0.0001
-    num_epochs = 10
-    image_size = (224, 224)
+    csv_file = 'distance_to_point_train.csv'
+    learning_rate = 0.001
+    num_epochs = 20
+    image_size = (256, 512)
     batch_size = 32
 
     transform = transforms.Compose([
@@ -67,7 +69,7 @@ def main():
     ])
 
     dataset = GeoLocationDataset(csv_file=csv_file, image_folder=image_folder, transform=transform)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4, persistent_workers=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=8, persistent_workers=True)
 
     print("Data loaded")
     num_outputs = 2259
@@ -93,7 +95,7 @@ def main():
                 print(f'Batch [{i+1}/{len(dataloader)}], Loss: {running_loss / (i+1):.4f}')
 
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss / len(dataloader):.4f}')
-        torch.save(model.state_dict(), f'Climate_zone_epoch_{epoch+1}.pth')
+        torch.save(model.state_dict(), f'ClimateZone_epoch_{epoch+1}.pth')
 
     print('Training Finished')
 
