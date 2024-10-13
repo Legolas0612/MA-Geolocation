@@ -134,7 +134,7 @@ def main():
     image_folder = 'Datasets/geolocation/images'
     csv_file = 'Datasets/geolocation/images.csv'
     pretrained_model_path = 'Climate_zone_epoch_10.pth'
-    combined_model_path = 'CombinedGeolocationCNN_epoch_10.pth'
+    combined_model_path = 'CombinedGeolocationCNN_epoch_20.pth'
     image_size = (224, 224)
     batch_size = 32
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
