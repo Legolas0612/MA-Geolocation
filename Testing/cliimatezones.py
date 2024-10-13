@@ -2,7 +2,6 @@ import pandas as pd
 from shapely.geometry import Point, shape
 from fastkml import kml
 
-# Function to read the KML file and extract polygons with their climate zone names
 def load_kml(file_path):
     with open(file_path, 'rt', encoding='utf-8') as f:
         doc = f.read()

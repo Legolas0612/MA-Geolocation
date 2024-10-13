@@ -1,12 +1,13 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+import torch.optim as optim
 from torchvision import transforms
+from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 import pandas as pd
 import os
 
-class GeoLocationTestDataset(Dataset):
+class GeoLocationDataset(Dataset):
     def __init__(self, csv_file, image_folder, transform=None, feature_extractor=None):
         self.data = pd.read_csv(csv_file)
         self.image_folder = image_folder
@@ -14,10 +15,11 @@ class GeoLocationTestDataset(Dataset):
         self.feature_extractor = feature_extractor
 
     def __len__(self):
-        return len(self.data[self.data.index >= 150000])
+        return len(self.data)
 
     def __getitem__(self, idx):
-        idx += 150000
+        if idx >= 150000:
+            idx = 0
         img_name = os.path.join(self.image_folder, self.data.iloc[idx, 0] + '.jpeg')
         image = Image.open(img_name).convert('RGB')
         if self.transform:
@@ -25,7 +27,6 @@ class GeoLocationTestDataset(Dataset):
 
         with torch.no_grad():
             features = self.feature_extractor(image.unsqueeze(0)).squeeze()
-
         latitude = self.data.at[idx, 'latitude']
         longitude = self.data.at[idx, 'longitude']
 
@@ -67,9 +68,7 @@ class CombinedGeolocationCNN(nn.Module):
         self.conv4 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.relu = nn.ReLU()
-
         flattened_size = 128 * (image_size[0] // 16) * (image_size[1] // 16) + feature_size
-
         self.fc1 = nn.Linear(flattened_size, hidden_size1)
         self.fc2 = nn.Linear(hidden_size1, hidden_size2)
         self.fc3 = nn.Linear(hidden_size2, num_outputs)
@@ -96,48 +95,15 @@ class CombinedGeolocationCNN(nn.Module):
         x = self.fc3(x)
         return x
 
-def test_model(combined_model, test_loader, device):
-    combined_model.eval()
-    difference_latitudes = []
-    difference_longitudes = []
-    latitude_targets = []
-    longitude_targets = []
-    latitude_predictions = []
-    longitude_predictions = []
-    image_names = []
-
-    with torch.no_grad():
-        for images, features, targets in test_loader:
-            images, features, targets = images.to(device), features.to(device), targets.to(device)
-
-            outputs = combined_model(images, features)
-            difference = torch.abs(outputs - targets)
-            latitude_targets.extend(targets[:, 0].tolist())
-            longitude_targets.extend(targets[:, 1].tolist())
-            latitude_predictions.extend(outputs[:, 0].tolist())
-            longitude_predictions.extend(outputs[:, 1].tolist())
-            difference_latitudes.extend(difference[:, 0].tolist())
-            difference_longitudes.extend(difference[:, 1].tolist())
-            
-            print(f"Latitude difference: {difference[0][0]:.6f}, Longitude difference: {difference[0][1]:.6f}")
-
-    mean_latitude = sum(difference_latitudes) / len(difference_latitudes)
-    mean_longitude = sum(difference_longitudes) / len(difference_longitudes)
-    
-    print(f'Mean Latitude Difference: {mean_latitude:.6f}')
-    print(f'Mean Longitude Difference: {mean_longitude:.6f}')
-    image_names = pd.read_csv('Datasets/geolocation/images.csv').iloc[150000:]['name'].tolist()
-    pd.DataFrame({'image_name': image_names, 'latitude_difference': difference_latitudes, 'longitude_difference': difference_longitudes, "latitude_targets": latitude_targets, 'longitude_targets': longitude_targets, 'latitude_predictions': latitude_predictions, "longitude_predictions": longitude_predictions}).to_csv('results.csv', index=False)
-
-
 def main():
+    print("Libraries imported")
     image_folder = 'Datasets/geolocation/images'
     csv_file = 'Datasets/geolocation/images.csv'
-    pretrained_model_path = 'Climate_zone_epoch_10.pth'
-    combined_model_path = 'CombinedGeolocationCNN_epoch_20.pth'
-    image_size = (224, 224)
-    batch_size = 32
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    pretrained_model_path = 'ClimateZone_epoch_20.pth'
+    learning_rate = 0.001
+    num_epochs = 20
+    image_size = (512, 256)
+    batch_size = 64
 
     transform = transforms.Compose([
         transforms.Resize(image_size),
@@ -150,19 +116,42 @@ def main():
     pretrained_model.load_state_dict(torch.load(pretrained_model_path))
     pretrained_model.eval()
 
-    test_dataset = GeoLocationTestDataset(
+    dataset = GeoLocationDataset(
         csv_file=csv_file,
         image_folder=image_folder,
         transform=transform,
         feature_extractor=pretrained_model
     )
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4, persistent_workers=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4, persistent_workers=True)
 
-    combined_model = CombinedGeolocationCNN(image_size=image_size, feature_size=feature_size, hidden_size1=128, hidden_size2=64, num_outputs=2)
-    combined_model.load_state_dict(torch.load(combined_model_path))
-    combined_model.to(device)
+    print("Data loaded")
 
-    test_model(combined_model, test_loader, device)
+    num_outputs = 2
+    combined_model = CombinedGeolocationCNN(image_size=image_size, feature_size=feature_size, hidden_size1=128, hidden_size2=64, num_outputs=num_outputs)
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(combined_model.parameters(), lr=learning_rate)
+
+    print("Starting training")
+    for epoch in range(num_epochs):
+        combined_model.train()
+        running_loss = 0.0
+        for i, (images, features, outputs) in enumerate(dataloader):
+            optimizer.zero_grad()
+
+            outputs_pred = combined_model(images, features)
+            loss = criterion(outputs_pred, outputs)
+            loss.backward()
+
+            optimizer.step()
+
+            running_loss += loss.item()
+            if i % 100 == 99:
+                print(f'Epoch [{epoch+1}/{num_epochs}], Batch [{i+1}/{len(dataloader)}], Loss: {running_loss / (i+1):.4f}')
+
+        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss / len(dataloader):.4f}')
+        torch.save(combined_model.state_dict(), f'CombinedGeolocationCNN_20_epoch_{epoch+1}.pth')
+
+    print('Training Finished')
 
 if __name__ == '__main__':
     main()
