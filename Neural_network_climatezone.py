@@ -97,7 +97,7 @@ def main():
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss / len(dataloader):.4f}')
         torch.save(model.state_dict(), f'ClimateZone_epoch_{epoch+1}.pth')
 
-    print('Training Finished')
 
 if __name__ == '__main__':
     main()
+    print('Training Finished')

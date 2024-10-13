@@ -68,9 +68,7 @@ class CombinedGeolocationCNN(nn.Module):
         self.conv4 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.relu = nn.ReLU()
-
         flattened_size = 128 * (image_size[0] // 16) * (image_size[1] // 16) + feature_size
-
         self.fc1 = nn.Linear(flattened_size, hidden_size1)
         self.fc2 = nn.Linear(hidden_size1, hidden_size2)
         self.fc3 = nn.Linear(hidden_size2, num_outputs)
@@ -101,11 +99,11 @@ def main():
     print("Libraries imported")
     image_folder = 'Datasets/geolocation/images'
     csv_file = 'Datasets/geolocation/images.csv'
-    pretrained_model_path = 'Climate_zone_epoch_10.pth'
+    pretrained_model_path = 'ClimateZone_epoch_20.pth'
     learning_rate = 0.001
     num_epochs = 20
-    image_size = (224, 224)
-    batch_size = 32
+    image_size = (512, 256)
+    batch_size = 64
 
     transform = transforms.Compose([
         transforms.Resize(image_size),
