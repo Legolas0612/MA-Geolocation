@@ -41,7 +41,9 @@ class SimpleCNN(nn.Module):
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.relu = nn.ReLU()
 
-        flattened_size = 64 * (image_size[0] // 8) * (image_size[1] // 8)
+        pooled_size = (image_size[0] // 8, image_size[1] // 8)
+        flattened_size = 64 * pooled_size[0] * pooled_size[1]
+
         self.fc = nn.Linear(flattened_size, num_outputs)
 
     def forward(self, x):
@@ -59,7 +61,7 @@ class SimpleCNN(nn.Module):
         return x
 
 class CombinedGeolocationCNN(nn.Module):
-    def __init__(self, image_size, feature_size, hidden_size1, hidden_size2, num_outputs):
+    def __init__(self, image_size, feature_size):
         super(CombinedGeolocationCNN, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1)
@@ -68,11 +70,12 @@ class CombinedGeolocationCNN(nn.Module):
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.relu = nn.ReLU()
 
-        flattened_size = 128 * (image_size[0] // 16) * (image_size[1] // 16) + feature_size
+        pooled_size = (image_size[0] // 16, image_size[1] // 16)
+        flattened_size = 128 * pooled_size[0] * pooled_size[1] + feature_size
 
-        self.fc1 = nn.Linear(flattened_size, hidden_size1)
-        self.fc2 = nn.Linear(hidden_size1, hidden_size2)
-        self.fc3 = nn.Linear(hidden_size2, num_outputs)
+        self.fc1 = nn.Linear(flattened_size, 512)
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, 2)
 
     def forward(self, image, features):
         x = self.conv1(image)
